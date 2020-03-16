@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Coronavirus Tracker App</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+</head>
+<body>
+
+<div class="container">
+    <h1>Coronavirus Tracker App</h1>
+    <p>This app shows current situation with CoronaVirus</p>
+
+    <div class="jumbotron">
+        <h1 class="display-4" th:text="${sum}"></h1>
+        <p class="lead">Total cases of Coronavirus across the world</p>
+        <hr class="my-4">
+        <p>New cases reported since previous day:</p>
+        <h4 class="display-4" th:text="${sumOfNew}"></h4>
+    </div>
+    <table class="table">
+        <thead class="thead-dark">
+        <tr>
+            <th>Country</th>
+            <th>State</th>
+            <th>Total cases reported</th>
+            <th>Daily difference</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="stat : ${stats}">
+            <td th:text="${stat.getCountry()}"></td>
+            <td th:text="${stat.getState()}">-</td>
+            <td th:text="${stat.getLatestTotal()}"></td>
+            <td th:style="${stat.getDailyDifference() > 0 ? 'color:red' : 'color:green'}"
+                th:text="${stat.getDailyDifference()}"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
