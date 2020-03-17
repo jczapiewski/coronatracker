@@ -55,16 +55,20 @@
         </tr>
         </tbody>
     </table>
-    <script>
-        var map = L.map('mapid').setView([53.695, 17.557], 13);
+    <script th:inline="javascript">
+
+        var points = [[${stats}]]
+
+        var map = L.map('mapid').setView([53.695, 17.557], 10);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        L.marker([53.695, 17.557]).addTo(map)
-            .bindPopup('Najpiękniejsze miasto świata')
-            .openPopup();
+        points.forEach(value => {
+        L.marker([value.point.lat, value.point.lon]).addTo(map)
+            .bindPopup(value.point.text)
+            .openPopup()});
     </script>
 </div>
 </body>

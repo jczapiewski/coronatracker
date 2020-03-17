@@ -1,6 +1,7 @@
 package com.coronatracker.service;
 
 import com.coronatracker.entity.CoronaStats;
+import com.coronatracker.entity.Point;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
@@ -68,8 +69,17 @@ public class CoronaService {
         return CoronaStats.builder()
                 .country(reader.get("Country/Region"))
                 .state(reader.get("Province/State"))
+                .point(getPointForStat(reader, latestCases))
                 .latestTotal(latestCases)
                 .dailyDifference(latestCases - dailyCases(reader, 2))
+                .build();
+    }
+
+    private Point getPointForStat(CSVRecord reader, int latestCases) {
+        return Point.builder()
+                .lat(Double.parseDouble(reader.get("Lat")))
+                .lon(Double.parseDouble(reader.get("Long")))
+                .text(String.format("Cases of Coronavirus: %s", latestCases))
                 .build();
     }
 

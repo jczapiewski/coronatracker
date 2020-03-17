@@ -13,6 +13,7 @@ public class CoronaStats {
 
     private String state;
     private String country;
+    private Point point;
     private int latestTotal;
     private int dailyDifference;
 }
