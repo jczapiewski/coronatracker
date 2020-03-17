@@ -22,8 +22,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class CoronaService {
 
-    @Value("${corona.data.url}")
-    private String VIRUS_DATA_URL;
+    @Value("${corona.confirmed.data.url}")
+    private String VIRUS_DATA_CONFIRMED_URL;
     private List<CoronaStats> stats = new ArrayList<>();
 
     public List<CoronaStats> getStats() {
@@ -48,7 +48,7 @@ public class CoronaService {
     private void fetchData() throws IOException, InterruptedException {
         HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(VIRUS_DATA_URL))
+                .uri(URI.create(VIRUS_DATA_CONFIRMED_URL))
                 .build();
         HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         CSVParser records = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(new StringReader(httpResponse.body()));
