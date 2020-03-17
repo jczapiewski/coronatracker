@@ -59,16 +59,16 @@
 
         var points = [[${stats}]]
 
-        var map = L.map('mapid').setView([53.695, 17.557], 10);
+        var map = L.map('mapid').setView([53.695, 17.557], 5);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
         points.forEach(value => {
-        L.marker([value.point.lat, value.point.lon]).addTo(map)
-            .bindPopup(value.point.text)
-            .openPopup()});
+            L.marker([value.point.lat, value.point.lon]).addTo(map)
+                .bindPopup(value.point.text)
+        });
     </script>
 </div>
 </body>
