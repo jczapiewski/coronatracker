@@ -54,14 +54,16 @@ public class CoronaService {
     @Scheduled(cron = "* * 1 * * *")
     private void fetchData() throws IOException, InterruptedException {
         HttpClient httpClient = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(VIRUS_DATA_CONFIRMED_URL))
-                .build();
+
+        HttpRequest request = getHttpRequest(VIRUS_DATA_CONFIRMED_URL);
         HttpResponse<String> confirmedCases = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        HttpRequest deathRequest = getHttpRequest();
+
+        HttpRequest deathRequest = getHttpRequest(VIRUS_DATA_DEATHS_URL);
         HttpResponse<String> deathCases = httpClient.send(deathRequest, HttpResponse.BodyHandlers.ofString());
+
         CSVParser confirmedRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(new StringReader(confirmedCases.body()));
         CSVParser csvDeathRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(new StringReader(deathCases.body()));
+
         List<CoronaStats> statsMap = getStatsMap(confirmedRecords, this::createCoronaStat, CoronaStats::getLatestTotal);
         csvDeathRecords.getRecords().forEach(record -> addDeathCases(statsMap, record));
         this.stats = statsMap;
@@ -77,9 +79,9 @@ public class CoronaService {
         return map.getCountry().equals(record.get("Country/Region")) && map.getState().equals(record.get("Province/State"));
     }
 
-    private HttpRequest getHttpRequest() {
+    private HttpRequest getHttpRequest(String url) {
         return HttpRequest.newBuilder()
-                .uri(URI.create(VIRUS_DATA_DEATHS_URL))
+                .uri(URI.create(url))
                 .build();
     }
 
