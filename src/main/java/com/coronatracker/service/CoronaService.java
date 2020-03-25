@@ -32,9 +32,6 @@ public class CoronaService {
     @Value("${corona.deaths.data.url}")
     private String virusDataDeathsUrl;
 
-    @Value("${corona.recovered.data.url}")
-    private String virusDataRecoversUrl;
-
     private List<CoronaStats> stats = new ArrayList<>();
 
     public List<CoronaStats> getStats() {
