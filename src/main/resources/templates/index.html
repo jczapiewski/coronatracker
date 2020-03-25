@@ -43,6 +43,7 @@
             <th>State</th>
             <th>Total cases reported</th>
             <th>Daily difference</th>
+            <th>Deaths</th>
         </tr>
         </thead>
         <tbody>
@@ -52,6 +53,7 @@
             <td th:text="${stat.getLatestTotal()}"></td>
             <td th:style="${stat.getDailyDifference() > 0 ? 'color:red' : 'color:green'}"
                 th:text="${stat.getDailyDifference()}"></td>
+            <td th:text="${stat.getDeathsTotal()}"></td>
         </tr>
         </tbody>
     </table>

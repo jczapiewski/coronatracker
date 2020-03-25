@@ -11,7 +11,6 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
@@ -30,7 +29,7 @@ public class CoronaService {
     private String VIRUS_DATA_CONFIRMED_URL;
 
     @Value("${corona.deaths.data.url}")
-    private String virusDataDeathsUrl;
+    private String VIRUS_DATA_DEATHS_URL;
 
     private List<CoronaStats> stats = new ArrayList<>();
 
@@ -58,36 +57,47 @@ public class CoronaService {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(VIRUS_DATA_CONFIRMED_URL))
                 .build();
-        HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
+        HttpResponse<String> confirmedCases = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         HttpRequest deathRequest = getHttpRequest();
-        HttpResponse<String> deathResponse = httpClient.send(deathRequest, HttpResponse.BodyHandlers.ofString());
-        CSVParser confirmedRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(new StringReader(httpResponse.body()));
-        CSVParser csvDeathRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(new StringReader(deathResponse.body()));
-        this.stats = getStatsMap(confirmedRecords, this::createCoronaStat, CoronaStats::getLatestTotal);
+        HttpResponse<String> deathCases = httpClient.send(deathRequest, HttpResponse.BodyHandlers.ofString());
+        CSVParser confirmedRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(new StringReader(confirmedCases.body()));
+        CSVParser csvDeathRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(new StringReader(deathCases.body()));
+        List<CoronaStats> statsMap = getStatsMap(confirmedRecords, this::createCoronaStat, CoronaStats::getLatestTotal);
+        csvDeathRecords.getRecords().forEach(record -> addDeathCases(statsMap, record));
+        this.stats = statsMap;
+    }
+
+    private void addDeathCases(List<CoronaStats> statsMap, CSVRecord record) {
+        statsMap.stream()
+                .filter(map -> isSameCountryAndState(record, map))
+                .forEach(map -> map.setDeathsTotal(calculateDailyCases(record, 1)));
+    }
+
+    private boolean isSameCountryAndState(CSVRecord record, CoronaStats map) {
+        return map.getCountry().equals(record.get("Country/Region")) && map.getState().equals(record.get("Province/State"));
     }
 
     private HttpRequest getHttpRequest() {
         return HttpRequest.newBuilder()
-                    .uri(URI.create(virusDataDeathsUrl))
-                    .build();
+                .uri(URI.create(VIRUS_DATA_DEATHS_URL))
+                .build();
     }
 
     private List<CoronaStats> getStatsMap(CSVParser parser, Function<? super CSVRecord, ? extends CoronaStats> function, ToIntFunction<? super CoronaStats> toIntFunction) throws IOException {
         return parser.getRecords().stream()
-                .filter(stat -> dailyCases(stat, 1) > 0)
+                .filter(stat -> calculateDailyCases(stat, 1) > 0)
                 .map(function)
                 .sorted(Comparator.comparingInt(toIntFunction).reversed())
                 .collect(Collectors.toList());
     }
 
     private CoronaStats createCoronaStat(CSVRecord reader) {
-        int latestCases = dailyCases(reader, 1);
+        int latestCases = calculateDailyCases(reader, 1);
         CoronaStats coronaStats = CoronaStats.builder()
                 .country(reader.get("Country/Region"))
                 .state(reader.get("Province/State"))
                 .latestTotal(latestCases)
-                .dailyDifference(latestCases - dailyCases(reader, 2))
+                .dailyDifference(latestCases - calculateDailyCases(reader, 2))
                 .build();
         coronaStats.setPoint(getPointForStat(reader, coronaStats));
         return coronaStats;
@@ -101,8 +111,8 @@ public class CoronaService {
                 .build();
     }
 
-    private int dailyCases(CSVRecord reader, int i) {
-        String value = reader.get(reader.size() - i);
+    private int calculateDailyCases(CSVRecord record, int i) {
+        String value = record.get(record.size() - i);
         if (value.equals("")) {
             return 0;
         }

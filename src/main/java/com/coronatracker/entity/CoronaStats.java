@@ -17,7 +17,6 @@ public class CoronaStats {
     private Point point;
     private int latestTotal;
     private int deathsTotal;
-    private int recoversTotal;
     private int dailyDifference;
     private LocalDate currentDate;
 }
