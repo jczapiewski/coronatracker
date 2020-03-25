@@ -1,6 +1,5 @@
 package com.coronatracker.controller;
 
-import com.coronatracker.entity.Point;
 import com.coronatracker.service.CoronaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;

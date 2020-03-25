@@ -11,6 +11,9 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import org.apache.commons.csv.CSVFormat;
@@ -25,6 +28,13 @@ public class CoronaService {
 
     @Value("${corona.confirmed.data.url}")
     private String VIRUS_DATA_CONFIRMED_URL;
+
+    @Value("${corona.deaths.data.url}")
+    private String virusDataDeathsUrl;
+
+    @Value("${corona.recovered.data.url}")
+    private String virusDataRecoversUrl;
+
     private List<CoronaStats> stats = new ArrayList<>();
 
     public List<CoronaStats> getStats() {
@@ -52,38 +62,53 @@ public class CoronaService {
                 .uri(URI.create(VIRUS_DATA_CONFIRMED_URL))
                 .build();
         HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        CSVParser records = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(new StringReader(httpResponse.body()));
-        this.stats = getStatsMap(records);
+
+        HttpRequest deathRequest = getHttpRequest();
+        HttpResponse<String> deathResponse = httpClient.send(deathRequest, HttpResponse.BodyHandlers.ofString());
+        CSVParser confirmedRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(new StringReader(httpResponse.body()));
+        CSVParser csvDeathRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(new StringReader(deathResponse.body()));
+        this.stats = getStatsMap(confirmedRecords, this::createCoronaStat, CoronaStats::getLatestTotal);
     }
 
-    private List<CoronaStats> getStatsMap(CSVParser parser) throws IOException {
+    private HttpRequest getHttpRequest() {
+        return HttpRequest.newBuilder()
+                    .uri(URI.create(virusDataDeathsUrl))
+                    .build();
+    }
+
+    private List<CoronaStats> getStatsMap(CSVParser parser, Function<? super CSVRecord, ? extends CoronaStats> function, ToIntFunction<? super CoronaStats> toIntFunction) throws IOException {
         return parser.getRecords().stream()
                 .filter(stat -> dailyCases(stat, 1) > 0)
-                .map(this::createCoronaStat)
-                .sorted(Comparator.comparingInt(CoronaStats::getLatestTotal).reversed())
+                .map(function)
+                .sorted(Comparator.comparingInt(toIntFunction).reversed())
                 .collect(Collectors.toList());
     }
 
     private CoronaStats createCoronaStat(CSVRecord reader) {
         int latestCases = dailyCases(reader, 1);
-        return CoronaStats.builder()
+        CoronaStats coronaStats = CoronaStats.builder()
                 .country(reader.get("Country/Region"))
                 .state(reader.get("Province/State"))
-                .point(getPointForStat(reader, latestCases))
                 .latestTotal(latestCases)
                 .dailyDifference(latestCases - dailyCases(reader, 2))
                 .build();
+        coronaStats.setPoint(getPointForStat(reader, coronaStats));
+        return coronaStats;
     }
 
-    private Point getPointForStat(CSVRecord reader, int latestCases) {
+    private Point getPointForStat(CSVRecord reader, CoronaStats stats) {
         return Point.builder()
                 .lat(Double.parseDouble(reader.get("Lat")))
                 .lon(Double.parseDouble(reader.get("Long")))
-                .text(String.format("Cases of Coronavirus: %s", latestCases))
+                .text("<b>" + stats.getCountry() + "<br>" + stats.getState() + "</b>" + "<br>" + "Cases of Coronavirus: " + stats.getLatestTotal())
                 .build();
     }
 
     private int dailyCases(CSVRecord reader, int i) {
-        return Integer.parseInt(reader.get(reader.size() - i));
+        String value = reader.get(reader.size() - i);
+        if (value.equals("")) {
+            return 0;
+        }
+        return Integer.parseInt(value);
     }
 }
